@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">AndroidFlight</string>
+    <string name="app_name">Flight Panel</string>
+    <string name="informations">Informations</string>
+    <string name="direction">Direction:</string>
+    <string name="angle">Angle:</string>
+    <string name="controller_x">Controller X:</string>
+    <string name="controller_y">Controller Y:</string>
+    <string name="controller">Controller</string>
+    <string name="autopilot">Autopilot</string>
 </resources>

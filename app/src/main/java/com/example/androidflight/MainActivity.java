@@ -1,10 +1,14 @@
 package com.example.androidflight;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 
 import com.example.androidflight.databinding.ActivityMainBinding;
 
@@ -12,19 +16,35 @@ public class MainActivity extends AppCompatActivity  {
 
     private ActivityMainBinding binding;
     private Joystick joystick;
+    private boolean isAutopilot = false;
 
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        setActionBar();
+        setJoystick();
+        setAutopilotBtn();
+
+    }
+
+    private void setActionBar() {
+        Window window = getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(ContextCompat.getColor(this ,R.color.background));
+    }
+
+    private void setJoystick() {
         joystick = new Joystick(getApplicationContext(), binding.layoutJoystick, R.drawable.btn_circle);
         joystick.setStickSize(250, 250);
         joystick.setLayoutSize(600, 600);
-        joystick.setLayoutAlpha(150);
-        joystick.setStickAlpha(120);
+        joystick.setLayoutAlpha(1000);
+        joystick.setStickAlpha(200);
         joystick.setOffset(90);
         joystick.setMinimumDistance(50);
 
@@ -66,7 +86,22 @@ public class MainActivity extends AppCompatActivity  {
                 return true;
             }
         });
+    }
 
+    private void setAutopilotBtn() {
+        binding.autopilotBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(isAutopilot) {
+                    binding.autopilotBtn.setBackgroundColor(getColor(R.color.background));
+                    binding.autopilotBtn.setTextColor(getColor(R.color.disable));
+                } else {
+                    binding.autopilotBtn.setBackgroundColor(getColor(R.color.teal_700));
+                    binding.autopilotBtn.setTextColor(getColor(R.color.white));
+                }
+                isAutopilot = !isAutopilot;
+            }
+        });
     }
 
 }
