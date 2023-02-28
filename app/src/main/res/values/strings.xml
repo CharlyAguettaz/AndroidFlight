@@ -7,4 +7,14 @@
     <string name="controller_y">Controller Y:</string>
     <string name="controller">Controller</string>
     <string name="autopilot">Autopilot</string>
+    <string name="up">UP</string>
+    <string name="up_right">UP RIGHT</string>
+    <string name="right">RIGHT</string>
+    <string name="down_right">DOWN RIGHT</string>
+    <string name="down">DOWN</string>
+    <string name="down_left">DOWN LEFT</string>
+    <string name="left">LEFT</string>
+    <string name="up_left">UP LEFT</string>
+    <string name="none">NONE</string>
+    <string name="manual_steering_n_disabled">Manual steering \n disabled</string>
 </resources>

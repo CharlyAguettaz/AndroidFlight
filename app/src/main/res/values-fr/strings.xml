@@ -8,4 +8,14 @@
     <string name="controller_y">Controller Y:</string>
     <string name="controller">Controller</string>
     <string name="autopilot">Pilotage Automatique</string>
+    <string name="up">HAUT</string>
+    <string name="up_right">HAUT DROIT</string>
+    <string name="right">DROIT</string>
+    <string name="down_right">BAS DROIT</string>
+    <string name="down">BAS</string>
+    <string name="down_left">BAS GAUCHE</string>
+    <string name="left">GAUCHE</string>
+    <string name="up_left">HAUT GAUCHE</string>
+    <string name="none">AUCUNE</string>
+    <string name="manual_steering_n_disabled">Pilotage manuel \n désactivé</string>
 </resources>
