@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="JoystickView"></declare-styleable>
+    <declare-styleable name="JoystickView_innerCircleColor"></declare-styleable>
+    <declare-styleable name="JoystickView_outerCircleColor"></declare-styleable>
+    <declare-styleable name="JoystickView_handleColor"></declare-styleable>
+</resources>
