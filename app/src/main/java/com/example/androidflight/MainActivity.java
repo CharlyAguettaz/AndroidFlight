@@ -23,15 +23,19 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
+import com.example.androidflight.BluetoothServer;
 
 import com.example.androidflight.databinding.ActivityMainBinding;
 
 import java.io.IOException;
+import java.util.Timer;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
@@ -48,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver receiver;
     private BluetoothSocket bluetoothSocket;
     private BluetoothServerSocket bluetoothServerSocket;
+    public static Handler handler;
 
 
     @Override
@@ -55,15 +60,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
+        setHandlerMessage();
         setActionBar();
         setJoystick();
         setAutopilotBtn();
         setBluetoothAdapter();
-        requestBluetoothPermission();
-        requestBluetoothEnable();
+        setActivityResultLauncher();
         setPairDeviceBtn();
-        setReceiver();
 
     }
 
@@ -78,7 +81,31 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(receiver);
+    }
+
+    private void setHandlerMessage() {
+        handler = new Handler(new Handler.Callback() {
+            @Override
+            public boolean handleMessage(@NonNull Message message) {
+                switch (message.what) {
+                    case BluetoothServer.STATE_CONNECTING:
+                        System.out.println("Connecting");
+                        Toast.makeText(getApplicationContext(), "Connecting", Toast.LENGTH_SHORT).show();
+                        break;
+                    case BluetoothServer.STATE_CONNECTED:
+                        System.out.println("Connecting");
+                        Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT).show();
+
+                        break;
+                    case BluetoothServer.STATE_FAILED:
+                        System.out.println("Connecting");
+                        Toast.makeText(getApplicationContext(), "Failed", Toast.LENGTH_SHORT).show();
+                        break;
+
+                }
+                return true;
+            }
+        });
     }
 
     private boolean checkBluetoothOK() {
@@ -97,65 +124,22 @@ public class MainActivity extends AppCompatActivity {
         bluetoothAdapter = bluetoothManager.getAdapter();
     }
 
-    private void setReceiver() {
-        if (checkBluetoothOK()) {
-            receiver = new BroadcastReceiver() {
-                @SuppressLint("MissingPermission")
-                public void onReceive(Context context, Intent intent) {
-                    String action = intent.getAction();
-                    String deviceName = "";
-                    if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                        BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                        deviceName = device.getName();
-                    }
-                    if(deviceName != null && deviceName.equals(BLUETOOTH_DEVICE_NAME)) {
-                        pairDevice();
-                    }
-                    pairDevice();
-                }
-            };
-            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-            filter.addAction(BluetoothDevice.ACTION_UUID);
-            filter.addAction(BluetoothDevice.ACTION_FOUND);
-            registerReceiver(receiver, filter);
-        }
-    }
-    private void toggleLoader(boolean show) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (show) {
-                    binding.layoutLoader.setVisibility(View.VISIBLE);
-                } else {
-                    binding.layoutLoader.setVisibility(View.GONE);
-                }
-            }
-        });
-    }
-    @SuppressLint("MissingPermission")
-    private void pairDevice() {
-        try {
-            bluetoothServerSocket = bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, UUID.fromString("00001101-0000-1000-8000-00294F9B3423"));
-            bluetoothSocket = bluetoothServerSocket.accept();
-        } catch (IOException e) {
-            binding.layoutLoader.setVisibility(View.GONE);
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void setPairDeviceBtn() {
-        requestBluetoothPermission();
-        requestBluetoothEnable();
-        if (receiver == null) {
-            setReceiver();
-        }
         binding.pairDeviceBtn.setOnClickListener(new View.OnClickListener() {
             @SuppressLint("MissingPermission")
             @Override
             public void onClick(View v) {
                 if(checkBluetoothOK()) {
-                    toggleLoader(true);
-                    bluetoothAdapter.startDiscovery();
+                    try {
+                        BluetoothServer bluetoothServer = new BluetoothServer(bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, UUID.fromString("00001101-0000-1000-8000-00294F9B3423")));
+                        bluetoothServer.run();
+                    } catch (IOException e) {
+                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+
+                } else {
+                    requestBluetoothPermission();
+                    requestBluetoothEnable();
                 }
             }
         });
@@ -171,25 +155,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void setActivityResultLauncher() {
+        activityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        if(result.getResultCode() == Activity.RESULT_OK) {
+
+                        } else {
+                            Toast.makeText(getApplicationContext(), "Can't use app without bluetooth", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
+    }
+
     private void requestBluetoothEnable() {
         if (!bluetoothAdapter.isEnabled() && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
             Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-
-            activityResultLauncher = registerForActivityResult(
-                    new ActivityResultContracts.StartActivityForResult(),
-                    new ActivityResultCallback<ActivityResult>() {
-                        @Override
-                        public void onActivityResult(ActivityResult result) {
-                            if(result.getResultCode() == Activity.RESULT_OK) {
-
-                            } else {
-                                        Toast.makeText(getApplicationContext(), "Can't use app without bluetooth", Toast.LENGTH_LONG).show();
-                            }
-                        }
-                    });
             activityResultLauncher.launch(intent);
         } else {
-            Toast.makeText(this, "Authorize bluetooth", Toast.LENGTH_SHORT).show();
+
         }
     }
 
@@ -282,14 +268,6 @@ public class MainActivity extends AppCompatActivity {
                 isAutopilot = !isAutopilot;
             }
         });
-    }
-
-    private void toggleAutopilot(boolean autopilot) {
-        if (autopilot) {
-
-        } else {
-
-        }
     }
 
 }
