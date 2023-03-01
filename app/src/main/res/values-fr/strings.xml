@@ -19,4 +19,5 @@
     <string name="none">AUCUNE</string>
     <string name="manual_steering_n_disabled">Pilotage manuel \n désactivé</string>
     <string name="pair_device">Pair device</string>
+    <string name="connect">Connect</string>
 </resources>

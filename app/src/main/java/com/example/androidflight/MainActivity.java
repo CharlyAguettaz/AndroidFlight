@@ -8,10 +8,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -19,6 +21,7 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -33,8 +36,10 @@ import android.widget.Toast;
 import com.example.androidflight.BluetoothServer;
 
 import com.example.androidflight.databinding.ActivityMainBinding;
+import com.example.androidflight.databinding.DialogBluetoothDevicesBinding;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Timer;
 import java.util.UUID;
 
@@ -52,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver receiver;
     private BluetoothSocket bluetoothSocket;
     private BluetoothServerSocket bluetoothServerSocket;
+    private ArrayList<BluetoothDeviceModel> bluetoothDeviceModelArrayList = new ArrayList<>();
+    private Dialog dialog;
+    private DialogBluetoothDevicesBinding dialogBluetoothDevicesBinding;
+    private RecyclerAdapterBluetoothDevice recyclerAdapterBluetoothDevice;
     public static Handler handler;
 
 
@@ -64,9 +73,11 @@ public class MainActivity extends AppCompatActivity {
         setActionBar();
         setJoystick();
         setAutopilotBtn();
+        setDialogBluetoothDevices();
         setBluetoothAdapter();
         setActivityResultLauncher();
         setPairDeviceBtn();
+        setReceiver();
 
     }
 
@@ -81,6 +92,49 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+    }
+
+    private void setDialogBluetoothDevices() {
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        dialogBluetoothDevicesBinding = DialogBluetoothDevicesBinding.inflate(getLayoutInflater());
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setLayoutManager(linearLayoutManager);
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setHasFixedSize(true);
+        recyclerAdapterBluetoothDevice = new RecyclerAdapterBluetoothDevice(bluetoothDeviceModelArrayList, this);
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setAdapter(recyclerAdapterBluetoothDevice);
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setClickable(true);
+        dialog = new Dialog(MainActivity.this);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                bluetoothAdapter.cancelDiscovery();
+                bluetoothDeviceModelArrayList.clear();
+                recyclerAdapterBluetoothDevice.notifyDataSetChanged();
+            }
+        });
+        dialog.setContentView(dialogBluetoothDevicesBinding.getRoot());
+    }
+
+    @SuppressLint("MissingPermission")
+    private void setReceiver() {
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothDevice.ACTION_UUID);
+        receiver = new BroadcastReceiver() {
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    String deviceName = device.getName();
+                    String deviceAddress = device.getAddress();
+                    bluetoothDeviceModelArrayList.add(new BluetoothDeviceModel(deviceName, deviceAddress));
+                    recyclerAdapterBluetoothDevice.notifyDataSetChanged();
+                }
+            }
+        };
+
+        registerReceiver(receiver, filter);
+
     }
 
     private void setHandlerMessage() {
@@ -130,13 +184,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if(checkBluetoothOK()) {
-                    try {
-                        BluetoothServer bluetoothServer = new BluetoothServer(bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, UUID.fromString("00001101-0000-1000-8000-00294F9B3423")));
-                        bluetoothServer.run();
-                    } catch (IOException e) {
-                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-
+                    dialog.show();
+                    bluetoothAdapter.startDiscovery();
                 } else {
                     requestBluetoothPermission();
                     requestBluetoothEnable();
