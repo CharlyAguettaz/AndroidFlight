@@ -25,6 +25,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -33,30 +34,24 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
-import com.example.androidflight.BluetoothServer;
 
 import com.example.androidflight.databinding.ActivityMainBinding;
 import com.example.androidflight.databinding.DialogBluetoothDevicesBinding;
 
-import java.io.IOException;
+
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.UUID;
+
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private Joystick joystick;
-    private boolean isAutopilot = false;
+    private boolean isManual = false;
     private final int REQUEST_BLUETOOTH_CODE = 1001;
     private final int REQUEST_BLUETOOTH_SCAN_CODE = 1010;
-    private final String BLUETOOTH_DEVICE_NAME = "Plane ACCMS";
-    private final String APP_NAME = "FLIGHT_PANEL";
     private BluetoothAdapter bluetoothAdapter;
     private ActivityResultLauncher<Intent> activityResultLauncher;
     private BroadcastReceiver receiver;
-    private BluetoothSocket bluetoothSocket;
-    private BluetoothServerSocket bluetoothServerSocket;
     private ArrayList<BluetoothDeviceModel> bluetoothDeviceModelArrayList = new ArrayList<>();
     private Dialog dialog;
     private DialogBluetoothDevicesBinding dialogBluetoothDevicesBinding;
@@ -72,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         setHandlerMessage();
         setActionBar();
         setJoystick();
-        setAutopilotBtn();
+        setManualBtn();
         setDialogBluetoothDevices();
         setBluetoothAdapter();
         setActivityResultLauncher();
@@ -238,18 +233,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void setJoystick() {
         joystick = new Joystick(getApplicationContext(), binding.layoutJoystick, R.drawable.btn_circle);
-        joystick.setStickSize(250, 250);
-        joystick.setLayoutSize(600, 600);
+        joystick.setStickSize(300, 300);
+        joystick.setLayoutSize(750, 750);
         joystick.setLayoutAlpha(1000);
         joystick.setStickAlpha(200);
-        joystick.setOffset(90);
+        joystick.setOffset(125);
         joystick.setMinimumDistance(50);
-        setJoystickListener();
-
     }
     @SuppressLint("ClickableViewAccessibility")
     private void setJoystickListener() {
-        binding.manualDisabledTv.setVisibility(View.GONE);
         binding.layoutJoystick.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View arg0, MotionEvent arg1) {
                 joystick.drawStick(arg1);
@@ -292,7 +284,6 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void disableJoystickListener() {
-        binding.manualDisabledTv.setVisibility(View.VISIBLE);
         binding.layoutJoystick.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -301,20 +292,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void setAutopilotBtn() {
-        binding.autopilotBtn.setOnClickListener(new View.OnClickListener() {
+    private void setManualBtn() {
+        binding.manualSteeringBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(isAutopilot) {
-                    binding.autopilotBtn.setBackgroundColor(getColor(R.color.background));
-                    binding.autopilotBtn.setTextColor(getColor(R.color.disable));
+                if(!isManual) {
+                    binding.manualSteeringBtn.setBackgroundColor(getColor(R.color.teal_700));
+                    binding.manualSteeringBtn.setTextColor(getColor(R.color.white));
+                    binding.arrowsView.setColorFilter(getColor(R.color.white), PorterDuff.Mode.SRC_IN);
                     setJoystickListener();
                 } else {
-                    binding.autopilotBtn.setBackgroundColor(getColor(R.color.teal_700));
-                    binding.autopilotBtn.setTextColor(getColor(R.color.white));
+                    binding.manualSteeringBtn.setBackgroundColor(getColor(R.color.background));
+                    binding.manualSteeringBtn.setTextColor(getColor(R.color.disable));
+                    binding.arrowsView.setColorFilter(getColor(R.color.disable), PorterDuff.Mode.SRC_IN);
                     disableJoystickListener();
                 }
-                isAutopilot = !isAutopilot;
+                isManual = !isManual;
             }
         });
     }

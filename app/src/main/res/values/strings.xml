@@ -19,4 +19,5 @@
     <string name="manual_steering_n_disabled">Manual steering \n disabled</string>
     <string name="pair_device">Pair device</string>
     <string name="connect">Connect</string>
+    <string name="manual_steering">Manual steering</string>
 </resources>

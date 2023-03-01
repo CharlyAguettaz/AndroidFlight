@@ -219,14 +219,14 @@
                     android:gravity="center">
 
                     <Button
-                        android:id="@+id/autopilotBtn"
+                        android:id="@+id/manualSteeringBtn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_margin="10dp"
                         android:backgroundTint="@color/background"
                         android:textColor="@color/disable"
                         android:textAllCaps="false"
-                        android:text="@string/autopilot"/>
+                        android:text="@string/manual_steering"/>
 
                     <RelativeLayout
                         android:id="@+id/layoutJoystick"
@@ -235,16 +235,13 @@
                         android:gravity="center"
                         android:background="@drawable/circle">
 
-                        <TextView
-                            android:id="@+id/manualDisabledTv"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAlignment="center"
-                            android:text="@string/manual_steering_n_disabled"
-                            android:textColor="@color/white"
-                            android:background="@color/disable"
-                            android:padding="5dp"
-                            />
+                        <ImageView
+                            android:id="@+id/arrowsView"
+                            android:padding="15dp"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/arrows"
+                            app:tint="@color/disable" />
 
                     </RelativeLayout>
 
