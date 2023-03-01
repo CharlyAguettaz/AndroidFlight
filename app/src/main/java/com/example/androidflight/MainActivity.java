@@ -4,6 +4,7 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -12,8 +13,14 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -24,16 +31,23 @@ import android.widget.Toast;
 
 import com.example.androidflight.databinding.ActivityMainBinding;
 
-import java.security.Permission;
+import java.io.IOException;
+import java.util.UUID;
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private Joystick joystick;
     private boolean isAutopilot = false;
-    private BluetoothService bluetoothService;
+    private final int REQUEST_BLUETOOTH_CODE = 1001;
+    private final int REQUEST_BLUETOOTH_SCAN_CODE = 1010;
+    private final String BLUETOOTH_DEVICE_NAME = "Plane ACCMS";
+    private final String APP_NAME = "FLIGHT_PANEL";
     private BluetoothAdapter bluetoothAdapter;
     private ActivityResultLauncher<Intent> activityResultLauncher;
+    private BroadcastReceiver receiver;
+    private BluetoothSocket bluetoothSocket;
+    private BluetoothServerSocket bluetoothServerSocket;
 
 
     @Override
@@ -45,55 +59,140 @@ public class MainActivity extends AppCompatActivity  {
         setActionBar();
         setJoystick();
         setAutopilotBtn();
-        requestBluetoothPermission();
         setBluetoothAdapter();
-        //setBluetoothService();
+        requestBluetoothPermission();
+        requestBluetoothEnable();
+        setPairDeviceBtn();
+        setReceiver();
 
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_BLUETOOTH_CODE && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(receiver);
+    }
+
+    private boolean checkBluetoothOK() {
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+                && bluetoothAdapter.isEnabled()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    private void setBluetoothAdapter() {
+        BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
+        bluetoothAdapter = bluetoothManager.getAdapter();
+    }
+
+    private void setReceiver() {
+        if (checkBluetoothOK()) {
+            receiver = new BroadcastReceiver() {
+                @SuppressLint("MissingPermission")
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    String deviceName = "";
+                    if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                        BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                        deviceName = device.getName();
+                    }
+                    if(deviceName != null && deviceName.equals(BLUETOOTH_DEVICE_NAME)) {
+                        pairDevice();
+                    }
+                    pairDevice();
+                }
+            };
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            filter.addAction(BluetoothDevice.ACTION_UUID);
+            filter.addAction(BluetoothDevice.ACTION_FOUND);
+            registerReceiver(receiver, filter);
+        }
+    }
+    private void toggleLoader(boolean show) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (show) {
+                    binding.layoutLoader.setVisibility(View.VISIBLE);
+                } else {
+                    binding.layoutLoader.setVisibility(View.GONE);
+                }
+            }
+        });
+    }
+    @SuppressLint("MissingPermission")
+    private void pairDevice() {
+        try {
+            bluetoothServerSocket = bluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(APP_NAME, UUID.fromString("00001101-0000-1000-8000-00294F9B3423"));
+            bluetoothSocket = bluetoothServerSocket.accept();
+        } catch (IOException e) {
+            binding.layoutLoader.setVisibility(View.GONE);
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setPairDeviceBtn() {
+        requestBluetoothPermission();
+        requestBluetoothEnable();
+        if (receiver == null) {
+            setReceiver();
+        }
+        binding.pairDeviceBtn.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onClick(View v) {
+                if(checkBluetoothOK()) {
+                    toggleLoader(true);
+                    bluetoothAdapter.startDiscovery();
+                }
+            }
+        });
     }
 
     private void requestBluetoothPermission() {
-        BluetoothManager bluetoothManager = getSystemService(BluetoothManager.class);
-        bluetoothAdapter = bluetoothManager.getAdapter();
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                != PackageManager.PERMISSION_GRANTED)
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
         {
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.BLUETOOTH_CONNECT }, 100);
-        } else {
-
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.BLUETOOTH_CONNECT }, REQUEST_BLUETOOTH_CODE);
+        }
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.BLUETOOTH_SCAN }, REQUEST_BLUETOOTH_SCAN_CODE);
         }
     }
 
-    private void setBluetoothAdapter() {
-        if (bluetoothAdapter.isEnabled()) {
+    private void requestBluetoothEnable() {
+        if (!bluetoothAdapter.isEnabled() && ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 
-        } else {
-            requestBluetooth();
-        }
-    }
+            activityResultLauncher = registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    new ActivityResultCallback<ActivityResult>() {
+                        @Override
+                        public void onActivityResult(ActivityResult result) {
+                            if(result.getResultCode() == Activity.RESULT_OK) {
 
-    private void requestBluetooth() {
-        Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-
-        activityResultLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                new ActivityResultCallback<ActivityResult>() {
-                    @Override
-                    public void onActivityResult(ActivityResult result) {
-                        if(result.getResultCode() == Activity.RESULT_OK) {
-
-                        } else {
-                            Toast.makeText(getApplicationContext(), "Can't use app without bluetooth", Toast.LENGTH_LONG).show();
+                            } else {
+                                        Toast.makeText(getApplicationContext(), "Can't use app without bluetooth", Toast.LENGTH_LONG).show();
+                            }
                         }
-                    }
-                }
-        );
-
-        activityResultLauncher.launch(intent);
+                    });
+            activityResultLauncher.launch(intent);
+        } else {
+            Toast.makeText(this, "Authorize bluetooth", Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void setBluetoothService() {
-        bluetoothService = new BluetoothService();
-    }
 
     private void setActionBar() {
         Window window = getWindow();

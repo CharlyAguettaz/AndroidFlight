@@ -18,4 +18,5 @@
     <string name="up_left">HAUT GAUCHE</string>
     <string name="none">AUCUNE</string>
     <string name="manual_steering_n_disabled">Pilotage manuel \n désactivé</string>
+    <string name="pair_device">Pair device</string>
 </resources>

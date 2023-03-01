@@ -17,4 +17,5 @@
     <string name="up_left">UP LEFT</string>
     <string name="none">NONE</string>
     <string name="manual_steering_n_disabled">Manual steering \n disabled</string>
+    <string name="pair_device">Pair device</string>
 </resources>
