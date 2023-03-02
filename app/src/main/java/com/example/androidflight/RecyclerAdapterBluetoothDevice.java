@@ -1,5 +1,6 @@
 package com.example.androidflight;
 
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -29,6 +30,14 @@ public class RecyclerAdapterBluetoothDevice extends RecyclerView.Adapter<Recycle
         String name = bluetoothDeviceModel.getName() != null ? bluetoothDeviceModel.getName() : "undefined";
         String address = bluetoothDeviceModel.getAddress() != null ? bluetoothDeviceModel.getAddress() : "undefined";
         holder.rowBluetoothDeviceBinding.bluetoothDeviceTv.setText(name + " : " + address);
+
+        holder.rowBluetoothDeviceBinding.connectDeviceBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                BluetoothClient bluetoothClient = new BluetoothClient(bluetoothDeviceModel.getDevice());
+                bluetoothClient.start();
+            }
+        });
     }
 
     @Override

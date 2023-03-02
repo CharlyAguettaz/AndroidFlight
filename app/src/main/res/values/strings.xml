@@ -1,4 +1,5 @@
 <resources>
+    <string name="uuid" translatable="false">68013436-b8de-11ed-afa1-0242ac120002</string>
     <string name="app_name">Flight Panel</string>
     <string name="informations">Informations</string>
     <string name="direction">Direction:</string>

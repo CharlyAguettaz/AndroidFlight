@@ -1,5 +1,10 @@
 package com.example.androidflight;
 
+import static com.example.androidflight.ConstantStates.STATE_CONNECTED;
+import static com.example.androidflight.ConstantStates.STATE_CONNECTING;
+import static com.example.androidflight.ConstantStates.STATE_FAILED;
+import static com.example.androidflight.ConstantStates.STATE_MESSAGE_RECEIVED;
+
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -40,6 +45,7 @@ import com.example.androidflight.databinding.DialogBluetoothDevicesBinding;
 
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -57,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private DialogBluetoothDevicesBinding dialogBluetoothDevicesBinding;
     private RecyclerAdapterBluetoothDevice recyclerAdapterBluetoothDevice;
     public static Handler handler;
+    public static UUID uuid;
 
 
     @Override
@@ -64,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        uuid = UUID.fromString(getString(R.string.uuid));
+
         setHandlerMessage();
         setActionBar();
         setJoystick();
@@ -84,33 +94,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-
-    private void setDialogBluetoothDevices() {
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-        dialogBluetoothDevicesBinding = DialogBluetoothDevicesBinding.inflate(getLayoutInflater());
-        dialogBluetoothDevicesBinding.recyclerViewDevices.setLayoutManager(linearLayoutManager);
-        dialogBluetoothDevicesBinding.recyclerViewDevices.setHasFixedSize(true);
-        recyclerAdapterBluetoothDevice = new RecyclerAdapterBluetoothDevice(bluetoothDeviceModelArrayList, this);
-        dialogBluetoothDevicesBinding.recyclerViewDevices.setAdapter(recyclerAdapterBluetoothDevice);
-        dialogBluetoothDevicesBinding.recyclerViewDevices.setClickable(true);
-        dialog = new Dialog(MainActivity.this);
-        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @SuppressLint("MissingPermission")
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                bluetoothAdapter.cancelDiscovery();
-                bluetoothDeviceModelArrayList.clear();
-                recyclerAdapterBluetoothDevice.notifyDataSetChanged();
-            }
-        });
-        dialog.setContentView(dialogBluetoothDevicesBinding.getRoot());
-    }
-
     @SuppressLint("MissingPermission")
     private void setReceiver() {
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
@@ -122,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     String deviceName = device.getName();
                     String deviceAddress = device.getAddress();
-                    bluetoothDeviceModelArrayList.add(new BluetoothDeviceModel(deviceName, deviceAddress));
+                    bluetoothDeviceModelArrayList.add(new BluetoothDeviceModel(device, deviceName, deviceAddress));
                     recyclerAdapterBluetoothDevice.notifyDataSetChanged();
                 }
             }
@@ -137,18 +120,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean handleMessage(@NonNull Message message) {
                 switch (message.what) {
-                    case BluetoothServer.STATE_CONNECTING:
+                    case STATE_CONNECTING:
                         System.out.println("Connecting");
                         Toast.makeText(getApplicationContext(), "Connecting", Toast.LENGTH_SHORT).show();
                         break;
-                    case BluetoothServer.STATE_CONNECTED:
-                        System.out.println("Connecting");
+                    case STATE_CONNECTED:
+                        System.out.println("Connected");
                         Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT).show();
 
                         break;
-                    case BluetoothServer.STATE_FAILED:
-                        System.out.println("Connecting");
+                    case STATE_FAILED:
+                        System.out.println("Failed");
                         Toast.makeText(getApplicationContext(), "Failed", Toast.LENGTH_SHORT).show();
+                        break;
+
+                    case STATE_MESSAGE_RECEIVED:
+                        System.out.println("Message Received");
+                        Toast.makeText(getApplicationContext(), "Message Received", Toast.LENGTH_SHORT).show();
                         break;
 
                 }
@@ -205,13 +193,33 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultCallback<ActivityResult>() {
                     @Override
                     public void onActivityResult(ActivityResult result) {
-                        if(result.getResultCode() == Activity.RESULT_OK) {
-
-                        } else {
+                        if(result.getResultCode() != Activity.RESULT_OK) {
                             Toast.makeText(getApplicationContext(), "Can't use app without bluetooth", Toast.LENGTH_LONG).show();
                         }
                     }
                 });
+    }
+
+    private void setDialogBluetoothDevices() {
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        dialogBluetoothDevicesBinding = DialogBluetoothDevicesBinding.inflate(getLayoutInflater());
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setLayoutManager(linearLayoutManager);
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setHasFixedSize(true);
+        recyclerAdapterBluetoothDevice = new RecyclerAdapterBluetoothDevice(bluetoothDeviceModelArrayList, this);
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setAdapter(recyclerAdapterBluetoothDevice);
+        dialogBluetoothDevicesBinding.recyclerViewDevices.setClickable(true);
+        dialog = new Dialog(MainActivity.this);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                bluetoothAdapter.cancelDiscovery();
+                bluetoothDeviceModelArrayList.clear();
+                recyclerAdapterBluetoothDevice.notifyDataSetChanged();
+            }
+        });
+        dialog.setContentView(dialogBluetoothDevicesBinding.getRoot());
     }
 
     private void requestBluetoothEnable() {
