@@ -31,8 +31,8 @@ public class BluetoothClient extends Thread
     @SuppressLint("MissingPermission")
     public void run()
     {
-
         try {
+            System.out.println(socket);
             socket.connect();
             Message message=Message.obtain();
             message.what=STATE_CONNECTED;

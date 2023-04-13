@@ -22,8 +22,6 @@ import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -64,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerAdapterBluetoothDevice recyclerAdapterBluetoothDevice;
     public static Handler handler;
     public static UUID uuid;
+
+    private String lastAction = "";
 
 
     @Override
@@ -124,11 +124,12 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("Connecting");
                         Toast.makeText(getApplicationContext(), "Connecting", Toast.LENGTH_SHORT).show();
                         break;
+
                     case STATE_CONNECTED:
                         System.out.println("Connected");
                         Toast.makeText(getApplicationContext(), "Connected", Toast.LENGTH_SHORT).show();
-
                         break;
+
                     case STATE_FAILED:
                         System.out.println("Failed");
                         Toast.makeText(getApplicationContext(), "Failed", Toast.LENGTH_SHORT).show();
@@ -138,7 +139,6 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("Message Received");
                         Toast.makeText(getApplicationContext(), "Message Received", Toast.LENGTH_SHORT).show();
                         break;
-
                 }
                 return true;
             }
@@ -262,22 +262,58 @@ public class MainActivity extends AppCompatActivity {
                     int direction = joystick.get8Direction();
                     if(direction == Joystick.STICK_UP) {
                         binding.directionTextView.setText(R.string.up);
+                        if (!lastAction.equals("UP")) {
+                            lastAction = "UP";
+                            sendAction("UP");
+                        }
                     } else if(direction == Joystick.STICK_UPRIGHT) {
                         binding.directionTextView.setText(R.string.up_right);
+                        if (!lastAction.equals("UP")) {
+                            lastAction = "UP";
+                            sendAction("UP");
+                        }
                     } else if(direction == Joystick.STICK_RIGHT) {
                         binding.directionTextView.setText(R.string.right);
+                        if (!lastAction.equals("RIGHT")) {
+                            lastAction = "RIGHT";
+                            sendAction("RIGHT");
+                        }
                     } else if(direction == Joystick.STICK_DOWNRIGHT) {
                         binding.directionTextView.setText(R.string.down_right);
+                        if (!lastAction.equals("DOWN")) {
+                            lastAction = "DOWN";
+                            sendAction("DOWN");
+                        }
                     } else if(direction == Joystick.STICK_DOWN) {
                         binding.directionTextView.setText(R.string.down);
+                        if (!lastAction.equals("DOWN")) {
+                            lastAction = "DOWN";
+                            sendAction("DOWN");
+                        }
                     } else if(direction == Joystick.STICK_DOWNLEFT) {
                         binding.directionTextView.setText(R.string.down_left);
+                        if (!lastAction.equals("DOWN")) {
+                            lastAction = "DOWN";
+                            sendAction("DOWN");
+                        }
                     } else if(direction == Joystick.STICK_LEFT) {
                         binding.directionTextView.setText(R.string.left);
+                        if (!lastAction.equals("LEFT")) {
+                            lastAction = "LEFT";
+                            sendAction("LEFT");
+                        }
                     } else if(direction == Joystick.STICK_UPLEFT) {
                         binding.directionTextView.setText(R.string.up_left);
+                        if (!lastAction.equals("UP")) {
+                            lastAction = "UP";
+                            sendAction("UP");
+                        }
                     } else if(direction == Joystick.STICK_NONE) {
                         binding.directionTextView.setText(R.string.none);
+                        if (!lastAction.equals("NONE")) {
+                            lastAction = "NONE";
+                            sendAction("NONE");
+                        }
                     }
                 } else if(arg1.getAction() == MotionEvent.ACTION_UP) {
                     binding.directionTextView.setText(R.string.none);
@@ -288,6 +324,26 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    private void sendAction(String action) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Route.FlightAction flightAction = new Route.FlightAction(action);
+                try {
+                    Route.postAction(flightAction);
+                } catch (Exception e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, R.string.check_co, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -314,6 +370,10 @@ public class MainActivity extends AppCompatActivity {
                     binding.manualSteeringBtn.setTextColor(getColor(R.color.disable));
                     binding.arrowsView.setColorFilter(getColor(R.color.disable), PorterDuff.Mode.SRC_IN);
                     disableJoystickListener();
+                    if (!lastAction.equals("AUTO")) {
+                        lastAction = "AUTO";
+                        sendAction("AUTO");
+                    }
                 }
                 isManual = !isManual;
             }

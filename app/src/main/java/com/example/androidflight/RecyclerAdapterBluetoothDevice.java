@@ -34,6 +34,7 @@ public class RecyclerAdapterBluetoothDevice extends RecyclerView.Adapter<Recycle
         holder.rowBluetoothDeviceBinding.connectDeviceBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                System.out.println(MainActivity.uuid);
                 BluetoothClient bluetoothClient = new BluetoothClient(bluetoothDeviceModel.getDevice());
                 bluetoothClient.start();
             }
